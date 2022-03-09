@@ -55,7 +55,7 @@ def parse_data():
     # Rework datetime into separate date and time columns
     data[['date', 'time']] = data['datetime'].str.split('T', 1, expand=True)
     # For the purposes of this projet we need to know the time only at a precision of 60 minutes
-    data['time'] = data['time'].str.slice(0, 5)
+    data['time'] = data['time'].str.slice(0,5)
 
     '''Narrowing the selection to only Uusimaa region and
        choosing years 2021 (for prediction) and 2020 (for training)'''
@@ -72,18 +72,26 @@ def count_occurrences(df):
     """Counts occurrences of accidents in 30-minute intervals"""
 
     counts = np.zeros(48)
-    times = np.arange(0, 48, 1)  # values from 0 to 47 corresponding to times between 00:00 to 23:30
 
-    #print(df)
 
-    #print(df.loc[df['time'] == '20:00'])
-
+    hrs = 0
     for i in range(len(counts)):
-        if i < 10:
-            #counts[i] =
-            counts[i] = df[(df['time'] >= '0' + str(i) + ':00') & (df['time'] < '0' + str(i) + ':30')].count()
-        #else:
-        #    counts[i] = df.loc[df['time'] >= str(i) + ':00'] & df.loc[df['time'] < str(i) + ':30']
+
+        # for XX:00 - XX:29 intervals
+        if i % 2 == 0:
+            if hrs < 10:
+                counts[i] = len(df[(df['time'] >= '0' + str(hrs) + ':00') & (df['time'] < '0' + str(hrs) + ':30')])
+            else:
+                counts[i] = len(df[(df['time'] >= str(hrs) + ':00') & (df['time'] < str(hrs) + ':30')])
+        # for XX:30 - XX:59 intervals
+        else:
+            if hrs < 10:
+                counts[i] = len(df[(df['time'] >= '0' + str(hrs) + ':30') & (df['time'] < '0' + str(hrs) + ':60')])
+            else:
+                counts[i] = len(df[(df['time'] >= str(hrs) + ':30') & (df['time'] < str(hrs) + ':60')])
+
+        if i % 2 == 0:  # every two i's the hour should increment by 1
+            hrs += 1
 
     return counts
 
@@ -103,9 +111,13 @@ def main():
     s_120 = data[:][data.limit == 120]
 
     count_50 = count_occurrences(s_50)
-    print(count_50)
+    count_80 = count_occurrences(s_80)
+    count_100 = count_occurrences(s_100)
+    count_120 = count_occurrences(s_120)
 
-
+    times = np.arange(0, 48, 1)  # values from 0 to 47 corresponding to times between 00:00 to 23:30
+    plt.plot(times, count_50, 'bo')
+    plt.show()
 
 
 if __name__ == "__main__":
