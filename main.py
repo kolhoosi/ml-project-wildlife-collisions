@@ -1,5 +1,8 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import PolynomialFeatures
 
 
 def speed_limits(df):
@@ -46,13 +49,13 @@ def parse_data():
     df = df.dropna(axis=0)
 
     # Drop unnecessary columns: only datetime, region and road type information are needed
-    data = df.drop(['id', 'year', 'month', 'x', 'y', 'city', 'city_name', 'region', 'road_type_id', 'road_number', 'admin',
-                    'admin_name', 'species', 'species_name'], axis=1)
+    data = df.drop(['id', 'year', 'month', 'x', 'y', 'city', 'city_name', 'region', 'road_type_id', 'road_number',
+                    'admin', 'admin_name', 'species', 'species_name'], axis=1)
 
     # Rework datetime into separate date and time columns
     data[['date', 'time']] = data['datetime'].str.split('T', 1, expand=True)
     # For the purposes of this projet we need to know the time only at a precision of 60 minutes
-    data['time'] = data['time'].str.slice(0, 2)
+    data['time'] = data['time'].str.slice(0, 5)
 
     '''Narrowing the selection to only Uusimaa region and
        choosing years 2021 (for prediction) and 2020 (for training)'''
@@ -65,10 +68,44 @@ def parse_data():
     return data
 
 
-def main():
-    data = parse_data()
+def count_occurrences(df):
+    """Counts occurrences of accidents in 30-minute intervals"""
 
-    # TODO: linear regression for data
+    counts = np.zeros(48)
+    times = np.arange(0, 48, 1)  # values from 0 to 47 corresponding to times between 00:00 to 23:30
+
+    #print(df)
+
+    #print(df.loc[df['time'] == '20:00'])
+
+    for i in range(len(counts)):
+        if i < 10:
+            #counts[i] =
+            counts[i] = df[(df['time'] >= '0' + str(i) + ':00') & (df['time'] < '0' + str(i) + ':30')].count()
+        #else:
+        #    counts[i] = df.loc[df['time'] >= str(i) + ':00'] & df.loc[df['time'] < str(i) + ':30']
+
+    return counts
+
+
+def poly_regr(data):
+    """Polynomial regression training for the dataset"""
+    pass
+
+
+def main():
+    data = parse_data()  # data now has 4815 rows
+
+    # split data into 4 different sets based on the speed limit
+    s_50 = data[:][data.limit == 50]
+    s_80 = data[:][data.limit == 80]
+    s_100 = data[:][data.limit == 100]
+    s_120 = data[:][data.limit == 120]
+
+    count_50 = count_occurrences(s_50)
+    print(count_50)
+
+
 
 
 if __name__ == "__main__":
