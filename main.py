@@ -69,7 +69,7 @@ def parse_data():
 def poly_regr(x_tr, y_tr, x_val, y_val):
     """Polynomial regression training for the dataset"""
 
-    degrees = [3, 5, 10, 12]  # these degrees were a result of trial and error
+    degrees = [5, 8, 10, 12]  # these degrees were a result of trial and error
     tr_errors = []
     val_errors = []
 
@@ -157,6 +157,7 @@ def main():
     # d_test[-2] = len(test[(test['time'] <= '23:55') & (test['time'] > '23:50')])
     # d_test[-1] = len(test[(test['time'] <= '23:59') & (test['time'] > '23:55')])
 
+    # removing outliers
     d_train = d_train[abs(d_train - np.mean(d_train)) < 2 * np.std(d_train)]
     d_test = d_test[abs(d_test - np.mean(d_test)) < 2 * np.std(d_test)]
 
