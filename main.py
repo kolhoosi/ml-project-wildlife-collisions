@@ -89,10 +89,10 @@ def poly_regr(x_tr, y_tr, x_val, y_val):
         lin_regr.fit(x_train_poly, y_tr)
 
         y_pred_train = lin_regr.predict(x_train_poly)
-        tr_error = mean_squared_error(y_tr, y_pred_train)
+        tr_error = mean_squared_error(y_tr, y_pred_train) * 100  # dataset has been normalized
         X_val_poly = poly.fit_transform(x_val)
         y_pred_val = lin_regr.predict(X_val_poly)
-        val_error = mean_squared_error(y_val, y_pred_val)
+        val_error = mean_squared_error(y_val, y_pred_val) * 100  # dataset has been normalized
 
         tr_errors.append(tr_error)
         val_errors.append(val_error)
@@ -100,7 +100,7 @@ def poly_regr(x_tr, y_tr, x_val, y_val):
         X_fit = np.linspace(-25, 50, 100)
         plt.tight_layout()
         plt.xlim([0, 48])
-        plt.ylim([0, 100])
+        plt.ylim([0, 1])
         plt.xticks(positions, labels)
         plt.plot(X_fit, lin_regr.predict(poly.transform(X_fit.reshape(-1, 1))),
                  label="Model")  # plot the polynomial regression model
@@ -158,13 +158,21 @@ def main():
     # d_test[-1] = len(test[(test['time'] <= '23:59') & (test['time'] > '23:55')])
 
     # removing outliers
-    d_train = d_train[abs(d_train - np.mean(d_train)) < 2 * np.std(d_train)]
-    d_test = d_test[abs(d_test - np.mean(d_test)) < 2 * np.std(d_test)]
+    #d_train = d_train[abs(d_train - np.mean(d_train)) < 2 * np.std(d_train)]
+    #d_test = d_test[abs(d_test - np.mean(d_test)) < 2 * np.std(d_test)]
+
+    # normalizing
+    d_train_max = d_train.max()
+    n_d_train = d_train / d_train_max
+
+    d_test_max = d_test.max()
+    n_d_test = d_test / d_test_max
+
 
     times_train = np.arange(0, len(d_train), 1)  # values from 0 to 47 corresponding to times between 00:00 to 23:30
     times_test = np.arange(0, len(d_test), 1)
 
-    poly_regr(times_train, d_train, times_test, d_test)
+    poly_regr(times_train, n_d_train, times_test, n_d_test)
 
 
 if __name__ == "__main__":
