@@ -66,33 +66,6 @@ def parse_data():
     return data
 
 
-def count_occurrences(df):
-    """Counts occurrences of accidents in 30-minute intervals"""
-
-    counts = np.zeros(48)
-    hrs = 0
-
-    for i in range(len(counts)):
-
-        # for XX:00 - XX:29 intervals
-        if i % 2 == 0:
-            if hrs < 10:
-                counts[i] = len(df[(df['time'] >= '0' + str(hrs) + ':00') & (df['time'] < '0' + str(hrs) + ':30')])
-            else:
-                counts[i] = len(df[(df['time'] >= str(hrs) + ':00') & (df['time'] < str(hrs) + ':30')])
-        # for XX:30 - XX:59 intervals
-        else:
-            if hrs < 10:
-                counts[i] = len(df[(df['time'] >= '0' + str(hrs) + ':30') & (df['time'] < '0' + str(hrs) + ':60')])
-            else:
-                counts[i] = len(df[(df['time'] >= str(hrs) + ':30') & (df['time'] < str(hrs) + ':60')])
-
-        if i % 2 == 0:  # every two i's the hour should increment by 1
-            hrs += 1
-
-    return counts
-
-
 def poly_regr(x_tr, y_tr, x_val, y_val):
     """Polynomial regression training for the dataset"""
 
@@ -147,15 +120,13 @@ def poly_regr(x_tr, y_tr, x_val, y_val):
 def main():
     data = parse_data()  # data now has 4815 rows
 
-    # Split data into training and test/validation sets
-    s_80_train = data[:][data.date < '2020-12-31']
-    s_80_test = data[:][data.date > '2020-12-31']
+    # Split data into training and test/validation sets into 50/50 split
+    s_train = data[:][data.date < '2020-12-31']
+    s_test = data[:][data.date > '2020-12-31']
 
     # Sort values
-    train = s_80_train.sort_values(by=['time'])
-    test = s_80_test.sort_values(by=['time'])
-
-    # TODO: move this stuff into a separate function
+    train = s_train.sort_values(by=['time'])
+    test = s_test.sort_values(by=['time'])
 
     # Create starting and end datetime object from string
     start = datetime.strptime("00:00", "%H:%M")
@@ -186,34 +157,13 @@ def main():
     # d_test[-2] = len(test[(test['time'] <= '23:55') & (test['time'] > '23:50')])
     # d_test[-1] = len(test[(test['time'] <= '23:59') & (test['time'] > '23:55')])
 
+    d_train = d_train[abs(d_train - np.mean(d_train)) < 2 * np.std(d_train)]
+    d_test = d_test[abs(d_test - np.mean(d_test)) < 2 * np.std(d_test)]
+
     times_train = np.arange(0, len(d_train), 1)  # values from 0 to 47 corresponding to times between 00:00 to 23:30
     times_test = np.arange(0, len(d_test), 1)
 
-    '''
-    data_tr = data[data['date'].str.contains("2020")]   # training set
-    data_val = data[data['date'].str.contains("2021")]  # validation/test set
-
-    # split training data into 3 different sets based on the speed limit
-    s_50_tr = data_tr[:][data_tr.limit == 50]
-    s_80_tr = data_tr[:][data_tr.limit == 80]
-    s_100_tr = data_tr[:][data_tr.limit == 100]
-
-    count_50_tr = count_occurrences(s_50_tr)
-    count_80_tr = count_occurrences(s_80_tr)
-    count_100_tr = count_occurrences(s_100_tr)
-
-    # same split but for validation/test set
-    s_50_val = data_val[:][data_val.limit == 50]
-    s_80_val = data_val[:][data_val.limit == 80]
-    s_100_val = data_val[:][data_val.limit == 100]
-
-    count_50_val = count_occurrences(s_50_tr)
-    count_80_val = count_occurrences(s_80_val)
-    count_100_val = count_occurrences(s_100_val)'''
-
     poly_regr(times_train, d_train, times_test, d_test)
-
-    # TODO: poly_regr for different speed limits
 
 
 if __name__ == "__main__":
