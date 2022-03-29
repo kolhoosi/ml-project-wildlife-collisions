@@ -54,8 +54,7 @@ def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     positions = (0, 12, 24, 36, 48)
     labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
 
-    for i, degree in enumerate(degrees):
-        # plt.subplot(len(degrees), 1, i + 1)
+    for degree in degrees:
 
         lin_regr = LinearRegression()
         poly = PolynomialFeatures(degree=degree)
@@ -77,33 +76,37 @@ def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         test_errors.append(test_error)
         val_errors.append(val_error)
 
-        X_fit = np.linspace(-25, 50, 100)
-        plt.tight_layout()
-        plt.xlim([0, 48])
-        plt.ylim([0, 1])
-        plt.xticks(positions, labels)
-        plt.plot(X_fit, lin_regr.predict(poly.transform(X_fit.reshape(-1, 1))),
-                 label="Model")  # plot the polynomial regression model
-        plt.scatter(x_tr, y_tr, color="b", s=10, label="Train Datapoints")
-        # plot a scatter plot of y vs. x with color 'blue' and size '10'
-        plt.scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
-        # do the same for testing data with color 'green'
-        plt.scatter(x_val, y_val, color="r", s=10, label="Validation Datapoints")
-        # validation data with color 'red'
-        plt.xlabel('time of day')  # set the label for the x/y-axis
-        plt.ylabel('accidents')
-        plt.legend(loc="best")  # set the location of the legend
-        plt.title(f'Polynomial degree = {degree}\nTraining error = {tr_error:.5}\nTesting error = {test_error:.5}'
-                  f'\nValidation error = {val_error:.5}')
-        # set the title
+        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        ax[0].scatter(x_tr, y_tr, color="r", s=10, label="Train Datapoints")
+        ax[0].plot(x_tr, y_pred_train, "black", label="Polynomial regression", linewidth=2.0)
+        ax[0].legend(loc="best")
+        ax[0].set_xlabel('time of day')  # set the label for the x/y-axis
+        ax[0].set_ylabel('accidents')
+        ax[0].set_title(f'Training error = {tr_error:.5}')
 
-        plt.show()
+        ax[1].scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
+        ax[1].plot(x_test, y_pred_test, "black", label="Polynomial regression", linewidth=2.0)
+        ax[1].legend(loc="best")
+        ax[1].set_xlabel('time of day')  # set the label for the x/y-axis
+        ax[1].set_ylabel('accidents')
+        ax[1].set_title(f'Testing error = {test_error:.5}')
+
+        ax[2].scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
+        ax[2].plot(x_val, y_pred_val, "black", label="Polynomial regression", linewidth=2.0)
+        ax[2].legend(loc="best")
+        ax[2].set_xlabel('time of day')  # set the label for the x/y-axis
+        ax[2].set_ylabel('accidents')
+        ax[2].set_title(f'Validation error = {val_error:.5}')
+
+        fig.suptitle(f'Polynomial regression with polynomial degree = {degree}\n')
+        plt.savefig('poly'+str(degree))  # save figs to repository
+        #plt.show()
 
 
-def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
-    """Huber regression training for the dataset"""
+def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
+    """Linear regression training for the dataset"""
 
-    epsilon_values = [1, 2, 3]  # these degrees were a result of trial and error
+    epsilon_values = [1, 2, 3]
     train_errors = []
     test_errors = []
     val_errors = []
@@ -116,8 +119,67 @@ def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     positions = (0, 12, 24, 36, 48)
     labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
 
-    for i, epsilon in enumerate(epsilon_values):
-        # plt.subplot(len(degrees), 1, i + 1)
+
+    lin_regr = LinearRegression()
+    lin_regr.fit(x_tr, y_tr)
+
+    y_pred_train = lin_regr.predict(x_tr)
+    tr_error = mean_squared_error(y_tr, y_pred_train) * 100  # dataset has been normalized
+
+    y_pred_test = lin_regr.predict(x_test)
+    test_error = mean_squared_error(y_test, y_pred_test) * 100  # normalized
+
+    y_pred_val = lin_regr.predict(x_val)
+    val_error = mean_squared_error(y_val, y_pred_val) * 100  # normalized
+
+    train_errors.append(tr_error)
+    test_errors.append(test_error)
+    val_errors.append(val_error)
+
+    fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+    ax[0].scatter(x_tr, y_tr, color="r", s=10, label="Train Datapoints")
+    ax[0].plot(x_tr, y_pred_train, "black", label="Linear regression", linewidth=2.0)
+    ax[0].legend(loc="best")
+    ax[0].set_xlabel('time of day')  # set the label for the x/y-axis
+    ax[0].set_ylabel('accidents')
+    ax[0].set_title(f'Training error = {tr_error:.5}')
+
+    ax[1].scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
+    ax[1].plot(x_test, y_pred_test, "black", label="Linear regression", linewidth=2.0)
+    ax[1].legend(loc="best")
+    ax[1].set_xlabel('time of day')  # set the label for the x/y-axis
+    ax[1].set_ylabel('accidents')
+    ax[1].set_title(f'Testing error = {test_error:.5}')
+
+    ax[2].scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
+    ax[2].plot(x_val, y_pred_val, "black", label="Linear regression", linewidth=2.0)
+    ax[2].legend(loc="best")
+    ax[2].set_xlabel('time of day')  # set the label for the x/y-axis
+    ax[2].set_ylabel('accidents')
+    ax[2].set_title(f'Validation error = {val_error:.5}')
+
+    fig.suptitle(f'Linear regression with ordinary least squares loss\n')
+    plt.savefig('linear')
+    #plt.show()
+
+
+def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
+    """Huber regression training for the dataset"""
+
+    epsilon_values = [1, 1.5, 1.75]  # these degrees were a result of trial and error
+    train_errors = []
+    test_errors = []
+    val_errors = []
+
+    x_tr = x_tr.reshape(-1, 1)
+    x_test = x_test.reshape(-1, 1)
+    x_val = x_val.reshape(-1, 1)
+
+    # rename x labels
+    positions = (0, 12, 24, 36, 48)
+    labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
+
+    for epsilon in epsilon_values:
 
         lin_regr = LinearRegression()
         lin_regr.fit(x_tr, y_tr)
@@ -138,17 +200,31 @@ def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         test_errors.append(test_error)
         val_errors.append(val_error)
 
-        plt.scatter(x_tr, y_tr, color="r", s=10, label="Train Datapoints")
-        plt.scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
-        plt.scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
-        plt.plot(x_tr, coef, "r", label="Huber loss, %s" % epsilon)
-        plt.legend(loc="best")
-        plt.xlabel('time of day')  # set the label for the x/y-axis
-        plt.ylabel('accidents')
-        plt.title(f'Training error = {tr_error:.5}\nTesting error = {test_error:.5}\nValidation error = {val_error:.5}')
+        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
+        ax[0].scatter(x_tr, y_tr, color="r", s=10, label="Train Datapoints")
+        ax[0].plot(x_tr, y_pred_train, "black", label="Linear regression", linewidth=2.0)
+        ax[0].legend(loc="best")
+        ax[0].set_xlabel('time of day')  # set the label for the x/y-axis
+        ax[0].set_ylabel('accidents')
+        ax[0].set_title(f'Training error = {tr_error:.5}')
 
+        ax[1].scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
+        ax[1].plot(x_test, y_pred_test, "black", label="Linear regression", linewidth=2.0)
+        ax[1].legend(loc="best")
+        ax[1].set_xlabel('time of day')  # set the label for the x/y-axis
+        ax[1].set_ylabel('accidents')
+        ax[1].set_title(f'Testing error = {test_error:.5}')
 
-        plt.show()
+        ax[2].scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
+        ax[2].plot(x_val, y_pred_val, "black", label="Linear regression", linewidth=2.0)
+        ax[2].legend(loc="best")
+        ax[2].set_xlabel('time of day')  # set the label for the x/y-axis
+        ax[2].set_ylabel('accidents')
+        ax[2].set_title(f'Validation error = {val_error:.5}')
+
+        fig.suptitle(f'Linear regression with huber loss, epsilon={epsilon} \n')
+        plt.savefig('huber_eps'+str(float(epsilon))+'.png')
+        #plt.show()
 
 
 def main():
@@ -217,6 +293,7 @@ def main():
     times_val = np.arange(0, len(d_val), 1)
 
     poly_regr(times_train, n_d_train, times_test, n_d_test, times_val, n_d_val)
+    linear_regr(times_train, n_d_train, times_test, n_d_test, times_val, n_d_val)
     huber_regr(times_train, n_d_train, times_test, n_d_test, times_val, n_d_val)
 
 
