@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, HuberRegressor
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error
@@ -38,14 +38,16 @@ def parse_data():
     return data
 
 
-def poly_regr(x_tr, y_tr, x_val, y_val):
+def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     """Polynomial regression training for the dataset"""
 
-    degrees = [5, 8, 10, 12]  # these degrees were a result of trial and error
-    tr_errors = []
+    degrees = [5, 8, 10]  # these degrees were a result of trial and error
+    train_errors = []
+    test_errors = []
     val_errors = []
 
     x_tr = x_tr.reshape(-1, 1)
+    x_test = x_test.reshape(-1, 1)
     x_val = x_val.reshape(-1, 1)
 
     # rename x labels
@@ -62,11 +64,17 @@ def poly_regr(x_tr, y_tr, x_val, y_val):
 
         y_pred_train = lin_regr.predict(x_train_poly)
         tr_error = mean_squared_error(y_tr, y_pred_train) * 100  # dataset has been normalized
+
+        X_test_poly = poly.fit_transform(x_test)
+        y_pred_test = lin_regr.predict(X_test_poly)
+        test_error = mean_squared_error(y_test, y_pred_test) * 100  # dataset has been normalized
+
         X_val_poly = poly.fit_transform(x_val)
         y_pred_val = lin_regr.predict(X_val_poly)
         val_error = mean_squared_error(y_val, y_pred_val) * 100  # dataset has been normalized
 
-        tr_errors.append(tr_error)
+        train_errors.append(tr_error)
+        test_errors.append(test_error)
         val_errors.append(val_error)
 
         X_fit = np.linspace(-25, 50, 100)
@@ -77,14 +85,68 @@ def poly_regr(x_tr, y_tr, x_val, y_val):
         plt.plot(X_fit, lin_regr.predict(poly.transform(X_fit.reshape(-1, 1))),
                  label="Model")  # plot the polynomial regression model
         plt.scatter(x_tr, y_tr, color="b", s=10, label="Train Datapoints")
-        # plot a scatter plot of y(maxtmp) vs. X(mintmp) with color 'blue' and size '10'
+        # plot a scatter plot of y vs. x with color 'blue' and size '10'
+        plt.scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
+        # do the same for testing data with color 'green'
         plt.scatter(x_val, y_val, color="r", s=10, label="Validation Datapoints")
-        # do the same for validation data with color 'red'
+        # validation data with color 'red'
         plt.xlabel('time of day')  # set the label for the x/y-axis
         plt.ylabel('accidents')
         plt.legend(loc="best")  # set the location of the legend
-        plt.title(f'Polynomial degree = {degree}\nTraining error = {tr_error:.5}\nValidation error = {val_error:.5}')
+        plt.title(f'Polynomial degree = {degree}\nTraining error = {tr_error:.5}\nTesting error = {test_error:.5}'
+                  f'\nValidation error = {val_error:.5}')
         # set the title
+
+        plt.show()
+
+
+def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
+    """Huber regression training for the dataset"""
+
+    epsilon_values = [1, 2, 3]  # these degrees were a result of trial and error
+    train_errors = []
+    test_errors = []
+    val_errors = []
+
+    x_tr = x_tr.reshape(-1, 1)
+    x_test = x_test.reshape(-1, 1)
+    x_val = x_val.reshape(-1, 1)
+
+    # rename x labels
+    positions = (0, 12, 24, 36, 48)
+    labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
+
+    for i, epsilon in enumerate(epsilon_values):
+        # plt.subplot(len(degrees), 1, i + 1)
+
+        lin_regr = LinearRegression()
+        lin_regr.fit(x_tr, y_tr)
+        huber = HuberRegressor(alpha=0.0, epsilon=epsilon)
+        huber.fit(x_tr, y_tr)
+        coef = huber.coef_ * x_tr + huber.intercept_
+
+        y_pred_train = huber.predict(x_tr)
+        tr_error = mean_squared_error(y_tr, y_pred_train) * 100  # dataset has been normalized
+
+        y_pred_test = huber.predict(x_test)
+        test_error = mean_squared_error(y_test, y_pred_test) * 100  # normalized
+
+        y_pred_val = huber.predict(x_val)
+        val_error = mean_squared_error(y_val, y_pred_val) * 100  # normalized
+
+        train_errors.append(tr_error)
+        test_errors.append(test_error)
+        val_errors.append(val_error)
+
+        plt.scatter(x_tr, y_tr, color="r", s=10, label="Train Datapoints")
+        plt.scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
+        plt.scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
+        plt.plot(x_tr, coef, "r", label="Huber loss, %s" % epsilon)
+        plt.legend(loc="best")
+        plt.xlabel('time of day')  # set the label for the x/y-axis
+        plt.ylabel('accidents')
+        plt.title(f'Training error = {tr_error:.5}\nTesting error = {test_error:.5}\nValidation error = {val_error:.5}')
+
 
         plt.show()
 
@@ -154,7 +216,8 @@ def main():
     times_test = np.arange(0, len(d_test), 1)
     times_val = np.arange(0, len(d_val), 1)
 
-    poly_regr(times_train, n_d_train, times_test, n_d_test)
+    poly_regr(times_train, n_d_train, times_test, n_d_test, times_val, n_d_val)
+    huber_regr(times_train, n_d_train, times_test, n_d_test, times_val, n_d_val)
 
 
 if __name__ == "__main__":
