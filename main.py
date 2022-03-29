@@ -2,37 +2,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error
 from datetime import datetime, timedelta
-
-
-def speed_limits(df):
-    """Calculates speed limits based on road type"""
-
-    ''' These are MAX speed limits for each road type. It is possible and likely that many of the roads have a lower 
-        speed limit than this, however finding data about the speed limit for each road in Finland is outside the scope 
-        of this project. Therefore I will be using maximum speed limits instead.
-        https://vayla.fi/-/nopeusrajoituksilla-turvallisempaa-sujuvampaa-ja-haitattomampaa-liikennetta'''
-
-    MAANTIE = 80  # Seututie, kantatie and 'muu maantie' can have a max limit of 80: let's call them all 'maantie'
-    VALTATIE = 100  # most common speed limit for highways and other main roads
-    TAAJAMA = 50  # kunnan tie = streets inside municipalities within 'taajama' urban areas with max limit of 50
-
-    def categorize(row):
-        """Assigning the correct maximum speed limit based on road type"""
-
-        if row['road_type'] == 'Muu maantie' or row['road_type'] == 'Kantatie' or row['road_type'] == 'Seututie':
-            return MAANTIE
-        elif row['road_type'] == 'Valtatie' or row['road_type'] == 'Moottoritie':
-            return VALTATIE
-        else:
-            return TAAJAMA
-
-    df['road_type'] = df.apply(lambda row: categorize(row), axis=1)
-    df = df.rename(columns={'road_type': 'limit'})
-
-    return df
 
 
 def parse_data():
@@ -47,9 +20,9 @@ def parse_data():
     # Remove any rows from dataframe "df" which contain missing values
     df = df.dropna(axis=0)
 
-    # Drop unnecessary columns: only datetime, region and road type information are needed
-    data = df.drop(['id', 'year', 'month', 'x', 'y', 'city', 'city_name', 'region', 'road_type_id', 'road_number',
-                    'admin', 'admin_name', 'species', 'species_name'], axis=1)
+    # Drop unnecessary columns: only datetime and region information are needed
+    data = df.drop(['id', 'year', 'month', 'x', 'y', 'city', 'city_name', 'region', 'road_type', 'road_type_id',
+                    'road_number', 'admin', 'admin_name', 'species', 'species_name'], axis=1)
 
     # Rework datetime into separate date and time columns
     data[['date', 'time']] = data['datetime'].str.split('T', 1, expand=True)
@@ -61,7 +34,6 @@ def parse_data():
     data = data[data['region_name'] == "Uusimaa"]  # Narrowing the selection to only Uusimaa region
 
     data = data.drop(['region_name', 'datetime'], axis=1)  # Drop unnecessary columns
-    data = speed_limits(data)  # Deriving speed limits from road type information
 
     return data
 
@@ -120,13 +92,17 @@ def poly_regr(x_tr, y_tr, x_val, y_val):
 def main():
     data = parse_data()  # data now has 4815 rows
 
-    # Split data into training and test/validation sets into 50/50 split
+    # Split data into training and remaining sets by making 2020 training data
     s_train = data[:][data.date < '2020-12-31']
-    s_test = data[:][data.date > '2020-12-31']
+    s_rem = data[:][data.date > '2020-12-31']
+
+    # randomly split s_rem into testing and validation sets
+    s_test, s_val = train_test_split(s_rem, test_size=0.5)
 
     # Sort values
     train = s_train.sort_values(by=['time'])
     test = s_test.sort_values(by=['time'])
+    valid = s_val.sort_values(by=['time'])
 
     # Create starting and end datetime object from string
     start = datetime.strptime("00:00", "%H:%M")
@@ -141,15 +117,18 @@ def main():
 
     d_train = np.zeros((len(arr) + 2))
     d_test = np.zeros((len(arr) + 2))
+    d_val = np.zeros(len(arr) + 2)
 
     for i in range(len(arr)):
         if i == 0:
             d_train[i] = len(train[train['time'] <= str(arr[i])])
             d_test[i] = len(test[test['time'] <= str(arr[i])])
+            d_val[i] = len(valid[valid['time'] <= str(arr[i])])
 
         else:
             d_train[i] = len(train[(train['time'] <= str(arr[i])) & (train['time'] > str(arr[i - 1]))])
             d_test[i] = len(test[(test['time'] <= str(arr[i])) & (test['time'] > str(arr[i - 1]))])
+            d_val[i] = len(valid[(valid['time'] <= str(arr[i])) & (valid['time'] > str(arr[i - 1]))])
 
     # d_train[-2] = len(train[(train['time'] <= '23:55') & (train['time'] > '23:50')])
     # d_train[-1] = len(train[(train['time'] <= '23:59') & (train['time'] > '23:55')])
@@ -158,8 +137,8 @@ def main():
     # d_test[-1] = len(test[(test['time'] <= '23:59') & (test['time'] > '23:55')])
 
     # removing outliers
-    #d_train = d_train[abs(d_train - np.mean(d_train)) < 2 * np.std(d_train)]
-    #d_test = d_test[abs(d_test - np.mean(d_test)) < 2 * np.std(d_test)]
+    # d_train = d_train[abs(d_train - np.mean(d_train)) < 2 * np.std(d_train)]
+    # d_test = d_test[abs(d_test - np.mean(d_test)) < 2 * np.std(d_test)]
 
     # normalizing
     d_train_max = d_train.max()
@@ -168,9 +147,12 @@ def main():
     d_test_max = d_test.max()
     n_d_test = d_test / d_test_max
 
+    d_val_max = d_val.max()
+    n_d_val = d_val / d_val_max
 
     times_train = np.arange(0, len(d_train), 1)  # values from 0 to 47 corresponding to times between 00:00 to 23:30
     times_test = np.arange(0, len(d_test), 1)
+    times_val = np.arange(0, len(d_val), 1)
 
     poly_regr(times_train, n_d_train, times_test, n_d_test)
 
