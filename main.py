@@ -158,7 +158,7 @@ def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     ax[2].set_ylabel('accidents')
     ax[2].set_title(f'Validation error = {val_error:.5}')
 
-    fig.suptitle(f'Linear regression with ordinary least squares loss\n')
+    fig.suptitle(f'Linear regression with least squares loss\n')
     plt.savefig('linear')
     #plt.show()
 
