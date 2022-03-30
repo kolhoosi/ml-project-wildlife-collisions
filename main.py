@@ -51,7 +51,7 @@ def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     x_val = x_val.reshape(-1, 1)
 
     # rename x labels
-    positions = (0, 12, 24, 36, 48)
+    positions = (0, 36, 72, 108, 144)
     labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
 
     for degree in degrees:
@@ -83,6 +83,8 @@ def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         ax[0].set_xlabel('time of day')  # set the label for the x/y-axis
         ax[0].set_ylabel('accidents')
         ax[0].set_title(f'Training error = {tr_error:.5}')
+        ax[0].set_xticks(positions)
+        ax[0].set_xticklabels(labels)
 
         ax[1].scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
         ax[1].plot(x_test, y_pred_test, "black", label="Polynomial regression", linewidth=2.0)
@@ -90,6 +92,8 @@ def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         ax[1].set_xlabel('time of day')  # set the label for the x/y-axis
         ax[1].set_ylabel('accidents')
         ax[1].set_title(f'Testing error = {test_error:.5}')
+        ax[1].set_xticks(positions)
+        ax[1].set_xticklabels(labels)
 
         ax[2].scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
         ax[2].plot(x_val, y_pred_val, "black", label="Polynomial regression", linewidth=2.0)
@@ -97,16 +101,17 @@ def poly_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         ax[2].set_xlabel('time of day')  # set the label for the x/y-axis
         ax[2].set_ylabel('accidents')
         ax[2].set_title(f'Validation error = {val_error:.5}')
+        ax[2].set_xticks(positions)
+        ax[2].set_xticklabels(labels)
 
         fig.suptitle(f'Polynomial regression with polynomial degree = {degree}\n')
-        plt.savefig('poly'+str(degree))  # save figs to repository
-        #plt.show()
+        plt.savefig('poly'+str(degree))
+        plt.show()
 
 
 def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     """Linear regression training for the dataset"""
 
-    epsilon_values = [1, 2, 3]
     train_errors = []
     test_errors = []
     val_errors = []
@@ -116,13 +121,11 @@ def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     x_val = x_val.reshape(-1, 1)
 
     # rename x labels
-    positions = (0, 12, 24, 36, 48)
+    positions = (0, 36, 72, 108, 144)
     labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
-
 
     lin_regr = LinearRegression()
     lin_regr.fit(x_tr, y_tr)
-
     y_pred_train = lin_regr.predict(x_tr)
     tr_error = mean_squared_error(y_tr, y_pred_train) * 100  # dataset has been normalized
 
@@ -143,6 +146,8 @@ def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     ax[0].set_xlabel('time of day')  # set the label for the x/y-axis
     ax[0].set_ylabel('accidents')
     ax[0].set_title(f'Training error = {tr_error:.5}')
+    ax[0].set_xticks(positions)
+    ax[0].set_xticklabels(labels)
 
     ax[1].scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
     ax[1].plot(x_test, y_pred_test, "black", label="Linear regression", linewidth=2.0)
@@ -150,6 +155,8 @@ def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     ax[1].set_xlabel('time of day')  # set the label for the x/y-axis
     ax[1].set_ylabel('accidents')
     ax[1].set_title(f'Testing error = {test_error:.5}')
+    ax[1].set_xticks(positions)
+    ax[1].set_xticklabels(labels)
 
     ax[2].scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
     ax[2].plot(x_val, y_pred_val, "black", label="Linear regression", linewidth=2.0)
@@ -157,10 +164,12 @@ def linear_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     ax[2].set_xlabel('time of day')  # set the label for the x/y-axis
     ax[2].set_ylabel('accidents')
     ax[2].set_title(f'Validation error = {val_error:.5}')
+    ax[2].set_xticks(positions)
+    ax[2].set_xticklabels(labels)
 
-    fig.suptitle(f'Linear regression with least squares loss\n')
+    fig.suptitle(f'Linear regression with ordinary least squares loss\n')
     plt.savefig('linear')
-    #plt.show()
+    plt.show()
 
 
 def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
@@ -176,10 +185,11 @@ def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
     x_val = x_val.reshape(-1, 1)
 
     # rename x labels
-    positions = (0, 12, 24, 36, 48)
+    positions = (0, 36, 72, 108, 144)
     labels = ("00:00", "06:00", "12:00", "18:00", "24:00")
 
-    for epsilon in epsilon_values:
+    for i, epsilon in enumerate(epsilon_values):
+        # plt.subplot(len(degrees), 1, i + 1)
 
         lin_regr = LinearRegression()
         lin_regr.fit(x_tr, y_tr)
@@ -207,6 +217,8 @@ def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         ax[0].set_xlabel('time of day')  # set the label for the x/y-axis
         ax[0].set_ylabel('accidents')
         ax[0].set_title(f'Training error = {tr_error:.5}')
+        ax[0].set_xticks(positions)
+        ax[0].set_xticklabels(labels)
 
         ax[1].scatter(x_test, y_test, color="g", s=10, label="Test Datapoints")
         ax[1].plot(x_test, y_pred_test, "black", label="Linear regression", linewidth=2.0)
@@ -214,6 +226,8 @@ def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         ax[1].set_xlabel('time of day')  # set the label for the x/y-axis
         ax[1].set_ylabel('accidents')
         ax[1].set_title(f'Testing error = {test_error:.5}')
+        ax[1].set_xticks(positions)
+        ax[1].set_xticklabels(labels)
 
         ax[2].scatter(x_val, y_val, color="b", s=10, label="Validation Datapoints")
         ax[2].plot(x_val, y_pred_val, "black", label="Linear regression", linewidth=2.0)
@@ -221,10 +235,12 @@ def huber_regr(x_tr, y_tr, x_test, y_test, x_val, y_val):
         ax[2].set_xlabel('time of day')  # set the label for the x/y-axis
         ax[2].set_ylabel('accidents')
         ax[2].set_title(f'Validation error = {val_error:.5}')
+        ax[2].set_xticks(positions)
+        ax[2].set_xticklabels(labels)
 
         fig.suptitle(f'Linear regression with huber loss, epsilon={epsilon} \n')
-        plt.savefig('huber_eps'+str(float(epsilon))+'.png')
-        #plt.show()
+        plt.savefig('huber_eps'+str(epsilon)+'.png')
+        plt.show()
 
 
 def main():
